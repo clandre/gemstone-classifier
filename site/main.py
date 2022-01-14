@@ -1,17 +1,25 @@
+import os
+import sys
+from importlib import reload
+import random
+
 import streamlit as st
-import pandas as pd
 from PIL import Image
 import requests
-from io import BytesIO
 import base64
+import json
+
+import os.path as osp
+sys.path.append(osp.dirname(os.getcwd()))
+reload(sys)
 
 
 def load_image(image_file):
     return Image.open(image_file)
 
 
-def send_request(bytes_data):
-    response = requests.post("https://postman-echo.com/post", data=bytes_data)
+def send_request(url, bytes_data, headers):
+    response = requests.post(url, data=json.dumps(bytes_data), headers=headers).json()
     return response
 
 def main():
@@ -37,18 +45,30 @@ def main():
     button = st.button("Classify")
 
     if uploaded_file is not None and button == True:
-        response = requests.post("https://e7rmlkcdr0.execute-api.us-east-2.amazonaws.com/default/getGemstone", data=img_b64)
         
-        json_response = response.json()
+        # Response from model via api
+        gemstone_predict = None
+        gemstone_predict = random.choice(["Agate", "Alexandrite", "Almandine", "Amazonite", "Amber"])
 
-        st.header('Classification')
+        payload_dict = {"gemstone": gemstone_predict}
+        headers_dict = {'Content-Type':'application/json', 'Authorization': os.environ.get("AUTH_TOKEN")}
 
-        st.metric(label="Name", value=json_response["_id"])
-        st.metric(label="Chemical Formula", value=json_response["chemical_formula"])
+        # Retreieve information from gemstone api
+        response = send_request("https://ellrby6m1a.execute-api.us-east-2.amazonaws.com/getGemstone", payload_dict, headers_dict)
 
-        
-        st.subheader('Similar images')
-        
+        if response["status"] != 200:
+            st.error("Critical failure, contact system admin.")
+        else:
+            data = response["data"]
+
+            st.header('Classification')
+
+            st.metric(label="Name", value=data["_id"])
+            
+            st.markdown('<div class="css-1rh8hwn e16fv1kl1">' + 'Chemical Formula' + '</div>', unsafe_allow_html=True)
+            st.markdown('<div class="css-1xarl3l e16fv1kl2">' + data["chemical_formula"] + '</div>', unsafe_allow_html=True)
+            
+            st.subheader('Similar images')        
      
 
 if __name__ == "__main__":
