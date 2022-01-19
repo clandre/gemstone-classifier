@@ -9,6 +9,7 @@ import requests
 import base64
 import json
 import pandas as pd
+import io
 
 import os.path as osp
 sys.path.append(osp.dirname(os.getcwd()))
@@ -29,9 +30,18 @@ def main():
 
     uploaded_file = st.file_uploader("Choose a file", type=["png", "jpg", "jpeg"])
     if uploaded_file is not None:
-        # To read file as bytes:
-        bytes_data = uploaded_file.getvalue()
+        
         show_file = st.empty()
+
+        # Load image
+        pil_image = load_image(uploaded_file)
+        
+        # Convert images to webp format
+        buffer = io.BytesIO()
+        pil_image.save(buffer, format='webp')
+
+        # Read file as bytes:
+        bytes_data = buffer.getvalue()
 
         # Convert to base64 representation
         img_b64 = base64.b64encode(bytes_data).decode('utf-8')
@@ -40,19 +50,18 @@ def main():
         _, col2, _ = st.columns(3)
         with col2:
             st.write("Image preview")
-            st.image(uploaded_file, output_format="JPEG")
+            st.image(uploaded_file, output_format="JPEG")            
 
     # Make request to model
     button = st.button("Classify")
 
     if uploaded_file is not None and button == True:
+        
         headers_dict = {'Content-Type':'application/json', 'Authorization': os.environ.get("AUTH_TOKEN")}
         
         # Response from model via api
         payload_dict = {"image": img_b64}
         response = send_request("https://3cfscmzmg9.execute-api.us-east-2.amazonaws.com/predictGemstone", payload_dict, headers_dict)
-
-        st.write(response)
 
         if response["statusCode"] != 200:
             st.error("Critical failure, contact system admin.")
