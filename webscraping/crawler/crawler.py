@@ -15,7 +15,7 @@ import os.path as osp
 sys.path.append(osp.dirname(os.getcwd()))
 reload(sys)
 
-from utils.utils import create_dir, insert_gemstone, upload_file
+from utils.utils import create_dir, insert_gemstone, upload_file, retrieve_coordinates_from_countries
 
 
 class Crawler(ABC):
@@ -63,6 +63,10 @@ class Crawler(ABC):
         html = requests.get(url).text
         soup = bs(html, 'html.parser')
         return soup
+
+    def retrieve_coordinates_from_countries(self, configuration: dict):
+        print("Generating localities of gemstones")
+        retrieve_coordinates_from_countries(configuration)
 
 
 class MineralsNet(Crawler):
