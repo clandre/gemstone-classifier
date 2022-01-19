@@ -10,6 +10,7 @@ import base64
 import json
 import pandas as pd
 import io
+import boto3
 
 import os.path as osp
 sys.path.append(osp.dirname(os.getcwd()))
@@ -28,7 +29,7 @@ def main():
 
     st.title('Gemstone Classifier')
 
-    uploaded_file = st.file_uploader("Choose a file", type=["png", "jpg", "jpeg"])
+    uploaded_file = st.file_uploader("Choose a file", type=["png", "jpg", "jpeg", "webp"])
     if uploaded_file is not None:
         
         show_file = st.empty()
@@ -50,13 +51,13 @@ def main():
         _, col2, _ = st.columns(3)
         with col2:
             st.write("Image preview")
-            st.image(uploaded_file, output_format="JPEG")            
+            st.image(uploaded_file, output_format="JPEG", width=300)      
 
     # Make request to model
     button = st.button("Classify")
 
     if uploaded_file is not None and button == True:
-        
+
         headers_dict = {'Content-Type':'application/json', 'Authorization': os.environ.get("AUTH_TOKEN")}
         
         # Response from model via api
@@ -90,10 +91,26 @@ def main():
                 st.markdown('<div class="css-1rh8hwn e16fv1kl1">' + 'Chemical Formula' + '</div>', unsafe_allow_html=True)
                 st.markdown('<div class="css-1xarl3l e16fv1kl2">' + data["chemical_formula"] + '</div>', unsafe_allow_html=True)
                 
-                #st.subheader('Similar images')
+                if "Images" in data.keys():
+                    if len(data["Images"]) > 0:
+
+                        st.subheader('Similar images')
+
+                        s3 = boto3.resource("s3", 
+                            aws_access_key_id = os.environ.get("ACCESS_KEY_ID"),
+                            aws_secret_access_key = os.environ.get("SECRET_ACCESS_KEY")
+                            )
+
+                        similar_images = random.sample(data["Images"], 3)
+                        similar_images_columns = st.columns(3)
+
+                        for i, col in enumerate(similar_images_columns):
+                            current_image = s3.Object('gemstone-classifier', similar_images[i]).get()['Body'].read()
+                            col.image(current_image, output_format="JPEG", width=200)
+
 
                 if "localities" in data.keys():
-                    if len(data["localities"]) > 0:                
+                    if len(data["localities"]) > 0:           
                         st.subheader('Localities')
 
                         df = pd.DataFrame(
