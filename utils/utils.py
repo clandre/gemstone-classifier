@@ -58,3 +58,38 @@ def insert_gemstone(credentials: dict, collection:str, identifier:str, document:
         return False
 
 
+def get_gemstone(gemstone_name: str):
+    
+    with open("..//utils//config.yaml", "r") as stream:
+        try:
+            credentials = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+    client = MongoClient("mongodb+srv://{0}:{1}@{2}/{3}?retryWrites=true&w=majority".format(credentials['DATABASE']['USERNAME'], credentials['DATABASE']['PASSWORD'], credentials['DATABASE']['HOST'], credentials['DATABASE']['DB']))
+
+    db = client["gemstone-classifier"]
+
+    collection = "gemstone"
+    gemstone = db[collection]
+
+    return gemstone.find_one({"_id": gemstone_name})
+
+
+def retrieve_coordinates_from_countries(credentials):
+    client = MongoClient("mongodb+srv://{0}:{1}@{2}/{3}?retryWrites=true&w=majority".format(credentials['DATABASE']['USERNAME'], credentials['DATABASE']['PASSWORD'], credentials['DATABASE']['HOST'], credentials['DATABASE']['DB']))
+
+    db = client["gemstone-classifier"]
+    countries = db["countries"]
+    gemstone = db["gemstone"]
+
+    # Iterate countries and search for gemstones that were encountered there
+    countries_list = countries.find()
+
+    for country in countries_list:
+        # Get gemstone by country
+        gemstone_list = gemstone.find({"source": {"$regex": country["name"], "$options": "i" }})
+
+        # Update gemtone localities
+        for gem in gemstone_list:
+            gemstone.update_one({"_id": gem["_id"]}, {"$push": {"localities": {"latitude": country["latitude"], "longitude": country["longitude"]}}})
