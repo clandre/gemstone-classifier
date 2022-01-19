@@ -8,6 +8,7 @@ from PIL import Image
 import requests
 import base64
 import json
+import pandas as pd
 
 import os.path as osp
 sys.path.append(osp.dirname(os.getcwd()))
@@ -33,7 +34,7 @@ def main():
         show_file = st.empty()
 
         # Convert to base64 representation
-        img_b64 = base64.b64encode(bytes_data)
+        img_b64 = base64.b64encode(bytes_data).decode('utf-8')
         
         # Show image uploaded
         _, col2, _ = st.columns(3)
@@ -45,31 +46,52 @@ def main():
     button = st.button("Classify")
 
     if uploaded_file is not None and button == True:
+        headers_dict = {'Content-Type':'application/json', 'Authorization': os.environ.get("AUTH_TOKEN")}
         
         # Response from model via api
-        gemstone_predict = None
-        gemstone_predict = random.choice(["Agate", "Alexandrite", "Almandine", "Amazonite", "Amber"])
+        payload_dict = {"image": img_b64}
+        response = send_request("https://3cfscmzmg9.execute-api.us-east-2.amazonaws.com/predictGemstone", payload_dict, headers_dict)
 
-        payload_dict = {"gemstone": gemstone_predict}
-        headers_dict = {'Content-Type':'application/json', 'Authorization': os.environ.get("AUTH_TOKEN")}
+        # st.write(response)      
 
-        # Retreieve information from gemstone api
-        response = send_request("https://ellrby6m1a.execute-api.us-east-2.amazonaws.com/getGemstone", payload_dict, headers_dict)
-
-        if response["status"] != 200:
+        if response["statusCode"] != 200:
             st.error("Critical failure, contact system admin.")
         else:
-            data = response["data"]
+            gemstone_predict = response["data"]["gemstone"]
+            probability_predict = response["data"]["probability"]
 
-            st.header('Classification')
+            # Retrieve information from gemstone api
+            payload_dict = {"gemstone": gemstone_predict}
+            response = send_request("https://ellrby6m1a.execute-api.us-east-2.amazonaws.com/getGemstone", payload_dict, headers_dict)
 
-            st.metric(label="Name", value=data["_id"])
-            
-            st.markdown('<div class="css-1rh8hwn e16fv1kl1">' + 'Chemical Formula' + '</div>', unsafe_allow_html=True)
-            st.markdown('<div class="css-1xarl3l e16fv1kl2">' + data["chemical_formula"] + '</div>', unsafe_allow_html=True)
-            
-            st.subheader('Similar images')        
-     
+            if response["statusCode"] != 200:
+                st.error("Critical failure, contact system admin.")
+            else:
+                data = response["data"]
+
+                st.header('Classification')
+
+                col1, col2 = st.columns(2)
+                col1.metric(label="Name", value=gemstone_predict)
+                
+                col2.metric("Probability", value="{:.2f}%".format(float(probability_predict)*100))
+                
+                st.header('Information')
+                
+                st.markdown('<div class="css-1rh8hwn e16fv1kl1">' + 'Chemical Formula' + '</div>', unsafe_allow_html=True)
+                st.markdown('<div class="css-1xarl3l e16fv1kl2">' + data["chemical_formula"] + '</div>', unsafe_allow_html=True)
+                
+                #st.subheader('Similar images')
+
+                if "localities" in data.keys():
+                    if len(data["localities"]) > 0:                
+                        st.subheader('Localities')
+
+                        df = pd.DataFrame(
+                        data["localities"],
+                        columns=['latitude', 'longitude'])
+
+                        st.map(df, zoom=0)
 
 if __name__ == "__main__":
     main()
