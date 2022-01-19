@@ -1,0 +1,6 @@
+requests
+opencv-python-headless
+Pillow
+numpy
+pandas
+tensorflow==2.7.0
