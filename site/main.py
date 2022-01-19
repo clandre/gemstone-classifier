@@ -40,7 +40,7 @@ def main():
         _, col2, _ = st.columns(3)
         with col2:
             st.write("Image preview")
-            st.image(uploaded_file)
+            st.image(uploaded_file, output_format="JPEG")
 
     # Make request to model
     button = st.button("Classify")
@@ -52,7 +52,7 @@ def main():
         payload_dict = {"image": img_b64}
         response = send_request("https://3cfscmzmg9.execute-api.us-east-2.amazonaws.com/predictGemstone", payload_dict, headers_dict)
 
-        # st.write(response)      
+        st.write(response)
 
         if response["statusCode"] != 200:
             st.error("Critical failure, contact system admin.")
