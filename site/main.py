@@ -101,8 +101,9 @@ def main():
                             aws_secret_access_key = os.environ.get("SECRET_ACCESS_KEY")
                             )
 
-                        similar_images = random.sample(data["Images"], 3)
-                        similar_images_columns = st.columns(3)
+                        similar_images_qty = min(3, len(data["Images"]))
+                        similar_images = random.sample(data["Images"], similar_images_qty)
+                        similar_images_columns = st.columns(similar_images_qty)
 
                         for i, col in enumerate(similar_images_columns):
                             current_image = s3.Object('gemstone-classifier', similar_images[i]).get()['Body'].read()
