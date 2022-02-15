@@ -1,3 +1,4 @@
+from filecmp import clear_cache
 import os
 import sys
 from importlib import reload
@@ -24,6 +25,7 @@ def load_image(image_file):
 def send_request(url, bytes_data, headers):
     response = requests.post(url, data=json.dumps(bytes_data), headers=headers).json()
     return response
+
 
 def main():
 
@@ -62,8 +64,9 @@ def main():
         
         # Response from model via api
         payload_dict = {"image": img_b64}
-        response = send_request("https://3cfscmzmg9.execute-api.us-east-2.amazonaws.com/predictGemstone", payload_dict, headers_dict)
-
+        with st.spinner('Predicting ...'):
+            response = send_request("https://8ay4xlyqbj.execute-api.us-east-1.amazonaws.com/predictGemstone", payload_dict, headers_dict)
+        
         if response["statusCode"] != 200:
             st.error("Critical failure, contact system admin.")
         else:
@@ -72,53 +75,58 @@ def main():
 
             # Retrieve information from gemstone api
             payload_dict = {"gemstone": gemstone_predict}
-            response = send_request("https://ellrby6m1a.execute-api.us-east-2.amazonaws.com/getGemstone", payload_dict, headers_dict)
+            response = send_request("https://1zj9bdf85k.execute-api.us-east-1.amazonaws.com/getGemstone", payload_dict, headers_dict)
 
             if response["statusCode"] != 200:
                 st.error("Critical failure, contact system admin.")
             else:
                 data = response["data"]
 
-                st.header('Classification')
+                with st.container():
+                    st.markdown("""---""")
 
-                col1, col2 = st.columns(2)
-                col1.metric(label="Name", value=gemstone_predict)
-                
-                col2.metric("Probability", value="{:.2f}%".format(float(probability_predict)*100))
-                
-                st.header('Information')
-                
-                st.markdown('<div class="css-1rh8hwn e16fv1kl1">' + 'Chemical Formula' + '</div>', unsafe_allow_html=True)
-                st.markdown('<div class="css-1xarl3l e16fv1kl2">' + data["chemical_formula"] + '</div>', unsafe_allow_html=True)
-                
-                if "Images" in data.keys():
-                    if len(data["Images"]) > 0:
+                    st.header('Classification')
 
-                        st.subheader('Similar images')
+                    col1, col2 = st.columns(2)
+                    col1.metric(label="Name", value=gemstone_predict)
+                    
+                    col2.metric("Probability", value="{:.2f}%".format(float(probability_predict)*100))
+                    
+                    st.header('Information')
+                    
+                    st.markdown('<div class="css-1rh8hwn e16fv1kl1">' + 'Chemical Formula' + '</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="css-1xarl3l e16fv1kl2">' + data["chemical_formula"] + '</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="css-1rh8hwn e16fv1kl1">' + 'Mineral Class' + '</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="css-1xarl3l e16fv1kl2">' + data["mineral_class"] + '</div>', unsafe_allow_html=True)
+                    
+                    if "Images" in data.keys():
+                        if len(data["Images"]) > 0:
 
-                        s3 = boto3.resource("s3", 
-                            aws_access_key_id = os.environ.get("ACCESS_KEY_ID"),
-                            aws_secret_access_key = os.environ.get("SECRET_ACCESS_KEY")
-                            )
+                            st.subheader('Similar images')
 
-                        similar_images_qty = min(3, len(data["Images"]))
-                        similar_images = random.sample(data["Images"], similar_images_qty)
-                        similar_images_columns = st.columns(similar_images_qty)
+                            s3 = boto3.resource("s3", 
+                                aws_access_key_id = os.environ.get("ACCESS_KEY_ID"),
+                                aws_secret_access_key = os.environ.get("SECRET_ACCESS_KEY")
+                                )
 
-                        for i, col in enumerate(similar_images_columns):
-                            current_image = s3.Object('gemstone-classifier', similar_images[i]).get()['Body'].read()
-                            col.image(current_image, output_format="JPEG", width=200)
+                            similar_images_qty = min(3, len(data["Images"]))
+                            similar_images = random.sample(data["Images"], similar_images_qty)
+                            similar_images_columns = st.columns(similar_images_qty)
+
+                            for i, col in enumerate(similar_images_columns):
+                                current_image = s3.Object('gemstone-classifier', similar_images[i]).get()['Body'].read()
+                                col.image(current_image, output_format="JPEG", width=200)
 
 
-                if "localities" in data.keys():
-                    if len(data["localities"]) > 0:           
-                        st.subheader('Localities')
+                    if "localities" in data.keys():
+                        if len(data["localities"]) > 0:           
+                            st.subheader('Localities')
 
-                        df = pd.DataFrame(
-                        data["localities"],
-                        columns=['latitude', 'longitude'])
+                            df = pd.DataFrame(
+                            data["localities"],
+                            columns=['latitude', 'longitude'])
 
-                        st.map(df, zoom=0)
+                            st.map(df, zoom=0)
 
 if __name__ == "__main__":
     main()
