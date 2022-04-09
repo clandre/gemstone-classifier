@@ -1,6 +1,8 @@
-import os
+# -*- coding: utf-8 -*-
 
+import os
 import yaml
+
 import boto3
 from botocore.exceptions import ClientError
 from pymongo import MongoClient
@@ -13,17 +15,41 @@ def create_dir(path: str):
 
 
 def read_yaml(file_path):
+    """
+    Function to load yaml configuration file
+
+    Parameters
+    ----------
+
+        file_path: str
+            File path
+
+    Returns
+    ------
+        None
+    """
+
     with open(file_path, "r") as f:
         return yaml.safe_load(f)
 
 
 def upload_file(credentials: dict, file_name:str , object_name=None):
-    """Upload a file to an S3 bucket
+    """
+    Upload a file to an S3 bucket
 
-    :param file_name: File to upload
-    :param bucket: Bucket to upload to
-    :param object_name: S3 object name. If not specified then file_name is used
-    :return: True if file was uploaded, else False
+    Parameters
+    -----------
+
+        file_name: str
+            File to upload
+        bucket: str
+            Bucket to upload to
+        object_name: str
+            S3 object name. If not specified then file_name is used
+
+        Returns
+        --------
+            True if file was uploaded, else False
     """
 
     # If S3 object_name was not specified, use file_name
@@ -45,6 +71,25 @@ def upload_file(credentials: dict, file_name:str , object_name=None):
 
 
 def insert_gemstone(credentials: dict, collection:str, identifier:str, document: dict):
+    """
+    Function to insert a new gemstone
+
+    Parameters
+    ----------
+
+        credentials: dict
+            credentials to connect no database
+        collection: str
+            Collection name
+        identifier: str
+            Record id
+        document: dict
+            Document to be inserted
+    
+        Returns
+        -------
+            True if record was inserted, else False
+    """
     
     client = MongoClient("mongodb+srv://{0}:{1}@{2}/{3}?retryWrites=true&w=majority".format(credentials['DATABASE']['USERNAME'], credentials['DATABASE']['PASSWORD'], credentials['DATABASE']['HOST'], credentials['DATABASE']['DB']))
 
@@ -57,8 +102,55 @@ def insert_gemstone(credentials: dict, collection:str, identifier:str, document:
     else:
         return False
 
+def update_gemstone_images(credentials: dict, collection:str, identifier:str, images: list):
+    """
+    Function to update images list of a gemstone
+
+    Parameters
+    ----------
+
+        credentials: dict
+            credentials to connect no database
+        collection: str
+            Collection name
+        identifier: str
+            Record id
+        images: list
+            List of images
+    
+        Returns
+        -------
+            True if record was updated, else False
+    """
+
+
+    client = MongoClient("mongodb+srv://{0}:{1}@{2}/{3}?retryWrites=true&w=majority".format(credentials['DATABASE']['USERNAME'], credentials['DATABASE']['PASSWORD'], credentials['DATABASE']['HOST'], credentials['DATABASE']['DB']))
+
+    db = client["gemstone-classifier"]
+    gemstone = db[collection]
+
+    updated = gemstone.update_one({"_id": identifier}, {"$push": {"Images": images}}, upsert = True)
+
+    if updated:
+        return True
+    else:
+        return False
 
 def get_gemstone(gemstone_name: str):
+    """
+    Get gemstone
+
+    Parameters
+    ----------
+
+        gemstone_name: str
+            Gemstone name
+    
+        Returns
+        -------
+            gemstone (dict): Gemstone record
+    """
+
     
     with open("..//utils//config.yaml", "r") as stream:
         try:
@@ -77,6 +169,20 @@ def get_gemstone(gemstone_name: str):
 
 
 def retrieve_coordinates_from_countries(credentials):
+    """
+    Function to discover coordinates from country and update gemstone record
+
+    Parameters
+    -----------
+
+        credentials: dict
+            credentials to connect no database
+
+        Returns
+        --------
+            None
+    """
+
     client = MongoClient("mongodb+srv://{0}:{1}@{2}/{3}?retryWrites=true&w=majority".format(credentials['DATABASE']['USERNAME'], credentials['DATABASE']['PASSWORD'], credentials['DATABASE']['HOST'], credentials['DATABASE']['DB']))
 
     db = client["gemstone-classifier"]
