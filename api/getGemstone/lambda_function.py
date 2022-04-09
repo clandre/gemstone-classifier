@@ -12,17 +12,51 @@ client = MongoClient("mongodb+srv://{0}:{1}@{2}/{3}?retryWrites=true&w=majority"
 
 
 def lambda_handler(event, context):
+    """
+        Function to handle request
+
+        Parameters
+        ----------
+            event:
+                Request event
+            context:
+                Additional information from request
+
+        Returns
+        -------
+            response (dict): Response from request
+    """
     
     if event["headers"]["authorization"] == token:
         body = json.loads(event["body"])
         gemstone = body["gemstone"]
         gemstone_data = get_gemstone(gemstone)
 
-        return {"status": 200, "data": gemstone_data}
+        response = {"statusCode": 200, "data": gemstone_data}
     else:
-        return {"status": 401, "data": {}}
+        response = {"statusCode": 401, "data": {}}
+        
+    response["headers"] = {
+            "Content-Type": "application/json"
+            }
+
+    return json.dumps(response)
     
 def get_gemstone(gemstone_name: str):
+
+    """
+    Get gemstone
+
+    Parameters
+    ----------
+
+        gemstone_name: str
+            Gemstone name
+    
+        Returns
+        -------
+            gemstone (dict): Gemstone record if exists
+    """
 
     db = client["gemstone-classifier"]
 
