@@ -6,8 +6,10 @@ COPY requirements.txt ./
 
 RUN pip3 install -r requirements.txt
 
-#RUN pip3 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow_cpu-2.6.0-cp37-cp37m-manylinux2010_x86_64.whl
-
 COPY app.py ./
+
+COPY model.h5 ./
+
+COPY gemstone_enc.json ./
 
 CMD [ "app.handler" ]

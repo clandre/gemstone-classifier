@@ -4,32 +4,40 @@ from io import BytesIO
 from PIL import Image
 import cv2
 import numpy as np
-import boto3
 import os
-from tensorflow import keras
+from tensorflow.keras.models import load_model
 
 def read_model():
-    s3 = boto3.resource("s3", 
-                    aws_access_key_id = os.environ.get("ACCESS_KEY_ID"),
-                    aws_secret_access_key = os.environ.get("SECRET_ACCESS_KEY")
-                    )
-    bucket = s3.Bucket(os.environ.get("BUCKET"))
-    try:
-        bucket.download_file("model/model.h5", "/tmp/model.h5")
-        bucket.download_file("model/gemstone_enc.json", "/tmp/gemstone_enc.json")
-    except Exception as e:
-        print("Failed to load model")
-        print(e)
+    """
+    Function to read model at local file system
 
-    with open("/tmp/gemstone_enc.json", "r") as f:
-        gemstone_enc = json.load(f)
+        Returns
+        -------
+            model, gemstone_enc (keras.model, dict): Keras model and categorycal encoding of gemstone
+    """
 
-    model = keras.models.load_model("/tmp/model.h5")
-        
+    model = load_model("model.h5")
+    with open("gemstone_enc.json", "r") as f:
+        gemstone_enc = json.loads(f.read())
+
     return (model, gemstone_enc)
 
 def process_image(image):
-    img_w = img_h = 330
+    """
+    Function to process image
+
+        Parameters
+        ----------
+            image:
+                Image to be processed
+
+        Returns
+        -------
+            image (np.array): Image processed
+    """    
+
+
+    img_w = img_h = 300
 
     # Resize images
     image = cv2.resize(image, (img_w, img_h))
@@ -39,9 +47,24 @@ def process_image(image):
     return np.array([image])
 
 
+# Read model
 model, gemstone_enc = read_model()
 
 def handler(event, context):
+    """
+    Function to handle request
+
+        Parameters
+        ----------
+            event:
+                Request event
+            context:
+                Additional information from request
+
+        Returns
+        -------
+            response (dict): Response from request
+    """    
 
     body = json.loads(event["body"])
     image = body["image"]
