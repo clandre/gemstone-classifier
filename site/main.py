@@ -66,67 +66,73 @@ def main():
         payload_dict = {"image": img_b64}
         with st.spinner('Predicting ...'):
             response = send_request("https://8ay4xlyqbj.execute-api.us-east-1.amazonaws.com/predictGemstone", payload_dict, headers_dict)
+
+        if "message" in response:
+            st.warning("Service Unavailable. Try in few minutes.")
         
-        if response["statusCode"] != 200:
-            st.error("Critical failure, contact system admin.")
-        else:
-            gemstone_predict = response["data"]["gemstone"]
-            probability_predict = response["data"]["probability"]
-
-            # Retrieve information from gemstone api
-            payload_dict = {"gemstone": gemstone_predict}
-            response = send_request("https://1zj9bdf85k.execute-api.us-east-1.amazonaws.com/getGemstone", payload_dict, headers_dict)
-
+        if "statusCode" in response:
             if response["statusCode"] != 200:
                 st.error("Critical failure, contact system admin.")
             else:
-                data = response["data"]
+                gemstone_predict = response["data"]["gemstone"]
+                probability_predict = response["data"]["probability"]
 
-                with st.container():
-                    st.markdown("""---""")
+                # Retrieve information from gemstone api
+                payload_dict = {"gemstone": gemstone_predict}
+                response = send_request("https://1zj9bdf85k.execute-api.us-east-1.amazonaws.com/getGemstone", payload_dict, headers_dict)
 
-                    st.header('Classification')
+                if "message" in response:
+                    st.warning("Service Unavailable. Try in few minutes.")
+                elif response["statusCode"] != 200:
+                    st.error("Critical failure, contact system admin.")
+                else:
+                    data = response["data"]
 
-                    col1, col2 = st.columns(2)
-                    col1.metric(label="Name", value=gemstone_predict)
-                    
-                    col2.metric("Probability", value="{:.2f}%".format(float(probability_predict)*100))
-                    
-                    st.header('Information')
-                    
-                    st.markdown('<div class="css-1rh8hwn e16fv1kl1">' + 'Chemical Formula' + '</div>', unsafe_allow_html=True)
-                    st.markdown('<div class="css-1xarl3l e16fv1kl2">' + data["chemical_formula"] + '</div>', unsafe_allow_html=True)
-                    st.markdown('<div class="css-1rh8hwn e16fv1kl1">' + 'Mineral Class' + '</div>', unsafe_allow_html=True)
-                    st.markdown('<div class="css-1xarl3l e16fv1kl2">' + data["mineral_class"] + '</div>', unsafe_allow_html=True)
-                    
-                    if "Images" in data.keys():
-                        if len(data["Images"]) > 0:
+                    with st.container():
+                        st.markdown("""---""")
 
-                            st.subheader('Similar images')
+                        st.header('Classification')
 
-                            s3 = boto3.resource("s3", 
-                                aws_access_key_id = os.environ.get("ACCESS_KEY_ID"),
-                                aws_secret_access_key = os.environ.get("SECRET_ACCESS_KEY")
-                                )
+                        col1, col2 = st.columns(2)
+                        col1.metric(label="Name", value=gemstone_predict)
+                        
+                        col2.metric("Probability", value="{:.2f}%".format(float(probability_predict)*100))
+                        
+                        st.header('Information')
+                        
+                        st.markdown('<div class="css-1rh8hwn e16fv1kl1">' + 'Chemical Formula' + '</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="css-1xarl3l e16fv1kl2">' + data["chemical_formula"] + '</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="css-1rh8hwn e16fv1kl1">' + 'Mineral Class' + '</div>', unsafe_allow_html=True)
+                        st.markdown('<div class="css-1xarl3l e16fv1kl2">' + data["mineral_class"] + '</div>', unsafe_allow_html=True)
+                        
+                        if "Images" in data.keys():
+                            if len(data["Images"]) > 0:
 
-                            similar_images_qty = min(3, len(data["Images"]))
-                            similar_images = random.sample(data["Images"], similar_images_qty)
-                            similar_images_columns = st.columns(similar_images_qty)
+                                st.subheader('Similar images')
 
-                            for i, col in enumerate(similar_images_columns):
-                                current_image = s3.Object('gemstone-classifier', similar_images[i]).get()['Body'].read()
-                                col.image(current_image, output_format="JPEG", width=200)
+                                s3 = boto3.resource("s3", 
+                                    aws_access_key_id = os.environ.get("ACCESS_KEY_ID"),
+                                    aws_secret_access_key = os.environ.get("SECRET_ACCESS_KEY")
+                                    )
+
+                                similar_images_qty = min(3, len(data["Images"]))
+                                similar_images = random.sample(data["Images"], similar_images_qty)
+                                similar_images_columns = st.columns(similar_images_qty)
+
+                                for i, col in enumerate(similar_images_columns):
+                                    current_image = s3.Object('gemstone-classifier', similar_images[i]).get()['Body'].read()
+                                    col.image(current_image, output_format="JPEG", width=200)
 
 
-                    if "localities" in data.keys():
-                        if len(data["localities"]) > 0:           
-                            st.subheader('Localities')
+                        if "localities" in data.keys():
+                            if len(data["localities"]) > 0:           
+                                st.subheader('Localities')
 
-                            df = pd.DataFrame(
-                            data["localities"],
-                            columns=['latitude', 'longitude'])
+                                df = pd.DataFrame(
+                                data["localities"],
+                                columns=['latitude', 'longitude'])
 
-                            st.map(df, zoom=0)
+                                st.map(df, zoom=0)
 
 if __name__ == "__main__":
     main()
