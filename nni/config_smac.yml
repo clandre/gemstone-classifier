@@ -1,0 +1,13 @@
+experimentName: Gemstone
+searchSpaceFile: search_space.json
+trialCommand: python3 alexnet.py
+trialGpuNumber: 1
+trialConcurrency: 1
+maxTrialNumber: 10
+tuner:
+  name: SMAC
+  classArgs:
+    optimize_mode: maximize
+trainingService:
+  platform: local
+  useActiveGpu: true

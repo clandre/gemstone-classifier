@@ -1,0 +1,20 @@
+{
+    "dropout_rate_1": { "_type": "uniform", "_value": [0.5, 1.0] },
+    "dropout_rate_2": { "_type": "uniform", "_value": [0.5, 1.0] },
+    "dropout_rate_3": { "_type": "uniform", "_value": [0.5, 1.0] },
+    "conv_size_1": { "_type": "choice", "_value": [3, 5, 7, 11] },
+    "conv_size_2": { "_type": "choice", "_value": [3, 5, 7, 11] },
+    "conv_size_3": { "_type": "choice", "_value": [3, 5, 7, 11] },
+    "conv_size_4": { "_type": "choice", "_value": [3, 5, 7, 11] },
+    "conv_size_5": { "_type": "choice", "_value": [3, 5, 7, 11] },
+    "filter_size_1": { "_type": "choice", "_value": [96, 128, 256, 384, 512] },
+    "filter_size_2": { "_type": "choice", "_value": [96, 128, 256, 384, 512] },
+    "filter_size_3": { "_type": "choice", "_value": [96, 128, 256, 384, 512] },
+    "filter_size_4": { "_type": "choice", "_value": [96, 128, 256, 384, 512] },
+    "filter_size_5": { "_type": "choice", "_value": [96, 128, 256, 384, 512] },
+    "hidden_size_1": { "_type": "choice", "_value": [512, 1024, 2048, 4096] },
+    "hidden_size_2": { "_type": "choice", "_value": [512, 1024, 2048, 4096] },
+    "hidden_size_3": { "_type": "choice", "_value": [512, 1024, 2048, 4096] },
+    "batch_size": { "_type": "choice", "_value": [32, 64, 128] },
+    "learning_rate": { "_type": "choice", "_value": [0.0001, 0.001, 0.01, 0.1] }
+}
