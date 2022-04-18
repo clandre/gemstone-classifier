@@ -68,7 +68,7 @@ def main():
             response = send_request("https://8ay4xlyqbj.execute-api.us-east-1.amazonaws.com/predictGemstone", payload_dict, headers_dict)
 
         if "message" in response:
-            st.warning("Service Unavailable. Try in few minutes.")
+            st.warning("Service starting, try in few minutes.")
         
         if "statusCode" in response:
             if response["statusCode"] != 200:
